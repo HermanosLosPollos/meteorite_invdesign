@@ -1,0 +1,21 @@
+pip install openpyxl
+import pandas as pd
+import numpy as np
+
+df = pd.read_excel('imi_meteorites_maindataset.xlsx')
+
+all_elements = [col for col in df.columns if col != 'Sample Name']
+for col in all_elements:
+    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+elements = ['Cr', 'Co', 'Ni', 'Cu', 'Ga']
+
+df['Ni/Co'] = np.where(df['Co'] != 0, df['Ni'] / df['Co'], 0)
+df['Cr/Ni'] = np.where(df['Ni'] != 0, df['Cr'] / df['Ni'], 0)
+df['Cu/Ni'] = np.where(df['Ni'] != 0, df['Cu'] / df['Ni'], 0)
+
+df['Total_Comp'] = df[all_elements].sum(axis=1)
+df['Variance'] = df[all_elements].var(axis=1)
+
+final_cols = ['Sample Name'] + elements + ['Ni/Co', 'Cr/Ni', 'Cu/Ni', 'Total_Comp', 'Variance']
+df[final_cols].to_csv('meteorite_extracted_chemistry_1.csv', index=False)
