@@ -2,7 +2,7 @@ pip install openpyxl
 import pandas as pd
 import numpy as np
 
-df = pd.read_excel('imi_meteorites_maindataset.xlsx')
+df = pd.read_excel('imi_meteorites_converted.xlsx', skiprows=[1])
 
 all_elements = [col for col in df.columns if col != 'Sample Name']
 for col in all_elements:
