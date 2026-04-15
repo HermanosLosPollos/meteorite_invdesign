@@ -1,21 +1,44 @@
-pip install openpyxl
 import pandas as pd
 import numpy as np
 
-df = pd.read_excel('imi_meteorites_converted.xlsx', skiprows=[1])
+# 1. Load the dataset
+# Ensure imi_meteorites_main.csv is uploaded to your Colab session
+df = pd.read_csv('imi_meteorites_main.csv')
 
-all_elements = [col for col in df.columns if col != 'Sample Name']
-for col in all_elements:
-    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+# 2. Define the Ratio Mappings (Numerator Column, Denominator Column, Feature Name)
+ratio_map = [
+    ('Fe (wt%)', 'Mg (wt%)', 'Fe/Mg'),
+    ('MnO (wt%)', 'MgO (wt%)', 'MnO/MgO'),
+    ('FeO (vol%)', 'MgO (wt%)', 'FeO/MgO'),
+    ('Al2O3 (wt%)', 'CaO (wt%)', 'Al2O3/CaO'),
+    ('La (ppm)', 'Lu (ppm)', 'La/Lu'),
+    ('Eu (ppm)', 'Sm (ppm)', 'Eu/Sm'),
+    ('He3 (ccstp/g)', 'He4 (ccstp/g)', 'He3/He4'),
+    ('Ne21 (ccstp/g)', 'Ne22 (ccstp/g)', 'Ne21/Ne22'),
+    ('Ar40 (ccstp/g)', 'Ar36 (ccstp/g)', 'Ar40/Ar36')
+]
 
-elements = ['Cr', 'Co', 'Ni', 'Cu', 'Ga']
+# 3. Initialize the new feature dataframe
+extracted_df = pd.DataFrame()
+extracted_df['Sample Name'] = df['Sample Name']
 
-df['Ni/Co'] = np.where(df['Co'] != 0, df['Ni'] / df['Co'], 0)
-df['Cr/Ni'] = np.where(df['Ni'] != 0, df['Cr'] / df['Ni'], 0)
-df['Cu/Ni'] = np.where(df['Ni'] != 0, df['Cu'] / df['Ni'], 0)
+# 4. Calculate the 9 Ratios (with zero-division protection)
+for num_col, den_col, feature_name in ratio_map:
+    # Convert to numeric and handle missing values
+    num = pd.to_numeric(df[num_col], errors='coerce').fillna(0)
+    den = pd.to_numeric(df[den_col], errors='coerce').fillna(0)
+    # Calculate ratio, set to 0 if denominator is 0
+    extracted_df[feature_name] = np.where(den != 0, num / den, 0)
 
-df['Total_Comp'] = df[all_elements].sum(axis=1)
-df['Variance'] = df[all_elements].var(axis=1)
+# 5. Calculate Total REE (Sum of La, Sm, Eu, Yb, Lu)
+ree_elements = ['La (ppm)', 'Sm (ppm)', 'Eu (ppm)', 'Yb (ppm)', 'Lu (ppm)']
+for element in ree_elements:
+    df[element] = pd.to_numeric(df[element], errors='coerce').fillna(0)
 
-final_cols = ['Sample Name'] + elements + ['Ni/Co', 'Cr/Ni', 'Cu/Ni', 'Total_Comp', 'Variance']
-df[final_cols].to_csv('meteorite_extracted_chemistry_1.csv', index=False)
+extracted_df['Total REE'] = df[ree_elements].sum(axis=1)
+
+# 6. Save exactly these 10 features to the new CSV
+extracted_df.to_csv('meteorite_features_1.csv', index=False)
+
+print("Extraction complete. File 'meteorite_features_1.csv' has been created.")
+print(extracted_df.head())
